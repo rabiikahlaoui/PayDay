@@ -10,7 +10,7 @@ contract Payday {
         uint id;
         string name;
         uint price;
-        address owner;
+        address payable owner;
         bool purchased;
     }
 
@@ -18,7 +18,15 @@ contract Payday {
         uint id,
         string name,
         uint price,
-        address owner,
+        address payable owner,
+        bool purchased
+    );
+
+    event ProductPurchased(
+        uint id,
+        string name,
+        uint price,
+        address payable owner,
         bool purchased
     );
 
@@ -38,5 +46,25 @@ contract Payday {
         // Trigger events
         emit ProductCreated(productCount, _name, _price, msg.sender, false);
     }
-}
 
+    function purchaseProduct(uint _id) public payable {
+        // Fetch Data
+        Product memory _product = products[_id];
+        address payable _seller = _product.owner;
+
+        // Validation
+        require(_product.id > 0 && _product.id <= productCount);
+        require(msg.value >= _product.price);
+        require(!_product.purchased);
+        require(_seller != msg.sender);
+
+        // Purchase the product
+        _product.owner = msg.sender;
+        _product.purchased = true;
+        products[_id] = _product;
+        address(_seller).transfer(msg.value);
+
+        // Trigger events
+        emit ProductPurchased(_product.id, _product.name, _product.price, _product.owner, _product.purchased);
+    }
+}
