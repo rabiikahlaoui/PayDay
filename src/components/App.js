@@ -3,6 +3,7 @@ import './App.css';
 import Web3 from 'web3';
 import Payday from '../abis/Payday.json';
 import NavBar from './NavBar';
+import Main from './Main';
 
 class App extends Component {
 
@@ -14,6 +15,8 @@ class App extends Component {
       products: [],
       loading: true
     }
+
+    this.createProduct = this.createProduct.bind(this);
   }
 
   async componentWillMount() {
@@ -42,22 +45,32 @@ class App extends Component {
 
     if (networkData) {
       const payday = web3.eth.Contract(Payday.abi, networkData.address);
+      this.setState({ payday });
+      this.setState({ loading: false });
     } else {
       window.alert("The current network is not supported");
     }
   }
 
+  createProduct(name, price) {
+    this.setState({ loading: true });
+    this.state.payday.methods
+      .createProduct(name, price)
+      .send({ from: this.state.account })
+      .once('receipt', (receipt) => {
+        this.setState({ loading: false })
+      });
+  }
+
   render() {
     return (
       <div>
-        <NavBar account={this.state.account}/>
+        <NavBar account={this.state.account} />
         <div className="container-fluid mt-5">
           <div className="row">
-            <main role="main" className="col-lg-12 d-flex text-center">
-              <div className="content mr-auto ml-auto">
-                <h1>Welcome to Payday</h1>
-              </div>
-            </main>
+            <div className="col-lg-12 d-flex">
+              { this.state.loading ? 'Loading ...' : <Main createProduct={this.createProduct} /> }
+            </div>
           </div>
         </div>
       </div>
