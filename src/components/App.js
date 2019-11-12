@@ -17,6 +17,7 @@ class App extends Component {
     }
 
     this.createProduct = this.createProduct.bind(this);
+    this.purchaseProduct = this.purchaseProduct.bind(this);
   }
 
   async componentWillMount() {
@@ -46,6 +47,16 @@ class App extends Component {
     if (networkData) {
       const payday = web3.eth.Contract(Payday.abi, networkData.address);
       this.setState({ payday });
+
+      const productCount = await payday.methods.productCount().call();
+      this.setState({ productCount });
+
+      // Load products
+      for(let i = 1; i <= productCount; i++) {
+        const product = await payday.methods.products(i).call();
+        this.setState({ products: [...this.state.products, product] });
+      }
+
       this.setState({ loading: false });
     } else {
       window.alert("The current network is not supported");
@@ -62,6 +73,17 @@ class App extends Component {
       });
   }
 
+  purchaseProduct(id, price) {
+    console.log("purchasing in progress...");
+    this.setState({ loading: true });
+    this.state.payday.methods
+      .purchaseProduct(id)
+      .send({ from: this.state.account, value: price })
+      .once('receipt', (receipt) => {
+        this.setState({ loading: false });
+      });
+  }
+
   render() {
     return (
       <div>
@@ -69,7 +91,16 @@ class App extends Component {
         <div className="container-fluid mt-5">
           <div className="row">
             <div className="col-lg-12 d-flex">
-              { this.state.loading ? 'Loading ...' : <Main createProduct={this.createProduct} /> }
+              { 
+              
+              this.state.loading
+                ? 'Loading ...'
+                : <Main 
+                    products={this.state.products}
+                    createProduct={this.createProduct}
+                    purchaseProduct={this.purchaseProduct}
+                />
+              }
             </div>
           </div>
         </div>
